@@ -1,0 +1,20 @@
+[package]
+name = "pylogging"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.87"
+description = "A small, ergonomic logging library inspired by Python's logging module."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/dt-ss/pylogging"
+documentation = "https://docs.rs/pylogging"
+readme = "README.md"
+keywords = ["logging", "logger", "log", "formatter"]
+categories = ["development-tools::debugging"]
+
+[lib]
+# Published as the `pylogging` package, but imported as `logging` so the API
+# reads like Python's. Consumers add `pylogging = "0.1"` and `use logging::...`.
+name = "logging"
+
+[dependencies]
+chrono = "0.4"

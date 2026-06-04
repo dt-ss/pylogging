@@ -1,0 +1,42 @@
+name: Release
+
+# Publishes to crates.io when a version tag is pushed, e.g. `v0.1.0`.
+#
+# Authentication uses crates.io Trusted Publishing (OIDC): no API token is
+# stored as a secret. You must first register this repository + workflow as a
+# trusted publisher on crates.io (see the crate's Settings -> Trusted Publishing
+# on https://crates.io). The `id-token: write` permission below lets the job
+# request the short-lived OIDC credential GitHub mints for that exchange.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for Trusted Publishing (OIDC token exchange with crates.io).
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify the crate builds and tests pass
+        run: cargo test --all-targets
+
+      # Exchanges the GitHub OIDC token for a short-lived crates.io token.
+      - name: Authenticate to crates.io (Trusted Publishing)
+        uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+
+      - name: Publish
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
