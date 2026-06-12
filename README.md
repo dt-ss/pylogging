@@ -114,6 +114,49 @@ logger.info("inherits root's handler and level");
 // 2026-06-01 14:30:00 [INFO    ] my::module    | inherits root's handler and level
 ```
 
+## Colorized output
+
+`pylogging` lets you transform every rendered line before it's written via the
+`Transformer` trait. The most popular use? Per-level ANSI colors.
+
+Add a transformer function to your formatter — it gets the record and the
+rendered line, returns the final string:
+
+```rust
+use logging::{Formatter, Level, Logger, Record, StreamHandler};
+
+fn colorize(record: &Record, line: &String) -> String {
+    let code = match record.get("level").copied() {
+        Some("DEBUG") => "90",           // gray
+        Some("INFO") => "34",            // blue
+        Some("WARNING") => "33",         // yellow
+        Some("ERROR") => "31",           // red
+        Some("CRITICAL") => "38;5;88",   // deep red
+        _ => return line.clone(),
+    };
+    format!("\x1b[{code}m{line}\x1b[0m")
+}
+
+let mut formatter = Formatter::new("%(timestamp) [%(level)-8] %(name)-12 | %(message)");
+formatter.set_time_format("%Y-%m-%d %H:%M:%S");
+formatter.set_transformer(colorize);
+
+let root = Logger::root();
+root.add_handler(StreamHandler::new(formatter, std::io::stdout())).unwrap();
+root.set_level(Level::Debug);
+
+let log = Logger::get("my_app");
+log.info("server started");    // blue
+log.warning("disk at 85%");     // yellow
+log.error("connection refused"); // red
+```
+
+Run the full demo:
+
+```sh
+cargo run --example colorized
+```
+
 ## Pattern syntax
 
 A pattern is literal text with `%(field)` placeholders. Optional width/alignment
@@ -129,11 +172,12 @@ follows the `printf` convention:
 
 Common fields per record: `message`, `level`, `name`, `timestamp`, `thread`.
 
-See [`examples/quickstart.rs`](examples/quickstart.rs) for a full demo with
-per-level ANSI colors:
+See [`examples/quickstart.rs`](examples/quickstart.rs) for a minimal example.
+Run [`examples/colorized.rs`](examples/colorized.rs) for the full demo with
+ANSI colors, custom timestamps, and level filtering:
 
 ```sh
-cargo run --example quickstart
+cargo run --example colorized
 ```
 
 ## License
